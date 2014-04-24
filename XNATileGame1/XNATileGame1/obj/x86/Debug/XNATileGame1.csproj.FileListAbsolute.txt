@@ -1,0 +1,11 @@
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\bin\x86\Debug\Content\tank.xnb
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\bin\x86\Debug\XNATileGame1.exe
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\bin\x86\Debug\XNATileGame1.pdb
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\obj\x86\Debug\XNATileGame1.exe
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\obj\x86\Debug\XNATileGame1.pdb
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\bin\x86\Debug\Content\tile_black.xnb
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\bin\x86\Debug\Content\tile_blue.xnb
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\obj\x86\Debug\XNATileGame1.csprojResolveAssemblyReference.cache
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\bin\x86\Debug\Content\InGame.xnb
+C:\Users\DKronsta\Documents\Visual Studio 2010\Projects\XNATileGame1\XNATileGame1\XNATileGame1\bin\x86\Debug\Content\tile_red.xnb
