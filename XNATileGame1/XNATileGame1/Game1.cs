@@ -18,23 +18,26 @@ namespace XNATileGame1
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        Texture2D tank;
+        //Texture2D tank;
         Texture2D tile_black;
         Texture2D tile_blue;
         Texture2D tile_red;
 
+        Tank tank;
+
         int scale;
         int[,] board;
         int activePlayer;
-        int[,] p1pos;
+        List<Tank> p1units;
         int p1sel;
         int[] p1moves;
-        int[,] p2pos;
+        List<Tank> p2units;
         int p2sel;
         int[] p2moves;
         int turn;
-        Dictionary<int,Dictionary<int,Keys>> moves;
+        Dictionary<int,Dictionary<Tank,Keys>> moves;
         int moveCount;
+        KeyboardState lastKeyState;
 
         bool newTurn;
 
@@ -61,7 +64,7 @@ namespace XNATileGame1
             p1sel = 0;
             p2sel = 0;
             newTurn = true;
-            moves = new Dictionary<int, Dictionary<int, Keys>>();
+            moves = new Dictionary<int, Dictionary<Tank, Keys>>();
             moveCount = 0;
 
             #region init board
@@ -69,8 +72,13 @@ namespace XNATileGame1
             #endregion
 
             #region init starting positions
-            p1pos = new int[,] { { 18, 18 }, { 19, 18 } };
-            p2pos = new int[,] { { 18, 0 }, { 19, 0 } };
+            p1units = new List<Tank>();
+            p1units.Add(new Tank { posX = 18, posY = 18 });
+            p1units.Add(new Tank { posX = 19, posY = 18 });
+
+            p2units = new List<Tank>();
+            p2units.Add(new Tank { posX = 18, posY = 0 });
+            p2units.Add(new Tank { posX = 19, posY = 0 });
             #endregion
 
             base.Initialize();
@@ -86,7 +94,10 @@ namespace XNATileGame1
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
-            tank = Content.Load<Texture2D>("tank");
+            for (int i = 0; i < p1units.Count; i++)
+                p1units[i].LoadContent(Content, spriteBatch);
+            for (int i = 0; i < p2units.Count; i++)
+                p2units[i].LoadContent(Content, spriteBatch);
             tile_black = Content.Load<Texture2D>("tile_black");
             tile_blue = Content.Load<Texture2D>("tile_blue");
             tile_red = Content.Load<Texture2D>("tile_red");
@@ -119,98 +130,72 @@ namespace XNATileGame1
             if (keyState.IsKeyDown(Keys.Escape))
                 this.Exit();
 
-            #region manage turn
-            if (newTurn)
+            if (keyState != lastKeyState)
             {
-                newTurn = false;
-                turn++;
-                activePlayer = 1;
+                lastKeyState = keyState;
 
-                p1moves = new int[p1pos.GetUpperBound(0) + 1];
-                for (int i = p1pos.GetUpperBound(0); i >= 0; i--)
+                #region manage turn
+                if (newTurn)
                 {
-                    p1moves[i] = 0;
-                }
+                    newTurn = false;
+                    turn++;
+                    activePlayer = 1;
 
-                p2moves = new int[p2pos.GetUpperBound(0) + 1];
-                for (int i = p2pos.GetUpperBound(0); i >= 0; i--)
-                {
-                    p2moves[i] = 0;
-                }
-            }
-            #endregion
-
-            #region manage movement
-            switch (activePlayer)
-            {
-                case 1:
-                    MovePlayer(keyState, p1moves, p1sel, p1pos, moves);
-                    break;
-                case 2:
-                    MovePlayer(keyState, p2moves, p2sel, p2pos, moves);
-                    break;
-            }
-
-            if (keyState.IsKeyDown(Keys.Space))
-            {
-                if (moveCount < moves.Count)
-                {
-                    moveCount++;
-                    if (activePlayer == 1)
+                    for (int i = 0; i < p1units.Count; i++)
                     {
-                        p1sel++;
-                        if (p1sel > p1pos.GetUpperBound(0))
+                        p1units[i].movement = 2;
+                    }
+
+                    for (int i = 0; i < p2units.Count; i++)
+                    {
+                        p2units[i].movement = 2;
+                    }
+
+                }
+                #endregion
+
+                #region manage movement
+                switch (activePlayer)
+                {
+                    case 1:
+                        p1units[p1sel].MovePlayer(keyState, moves);
+                        break;
+                    case 2:
+                        p2units[p2sel].MovePlayer(keyState, moves);
+                        break;
+                }
+
+                if (keyState.IsKeyDown(Keys.Space))
+                {
+                    if (moveCount < moves.Count)
+                    {
+                        moveCount++;
+                        if (activePlayer == 1)
                         {
-                            p1sel = 0;
-                            activePlayer = 2;
+                            p1sel++;
+                            if (p1sel >= p1units.Count)
+                            {
+                                p1sel = 0;
+                                activePlayer = 2;
+                            }
+                        }
+                        else
+                        {
+                            p2sel++;
+                            if (p2sel >= p2units.Count)
+                            {
+                                p2sel = 0;
+                                newTurn = true;
+                            }
                         }
                     }
-                    else
-                    {
-                        p2sel++;
-                        if (p2sel > p2pos.GetUpperBound(0))
-                        {
-                            p2sel = 0;
-                            newTurn = true;
-                        }
-                    }
                 }
+                #endregion
             }
-            #endregion
-
             base.Update(gameTime);
         }
 
-        private void MovePlayer(KeyboardState keyState, int[] pMoves, int pSel, int[,] pPos, Dictionary<int, Dictionary<int, Keys>> moves)
-        {
-            if (pMoves[pSel] == 0)
-            {
-                if (keyState.IsKeyDown(Keys.Left) && pPos[pSel, 0] > 0)
-                {
-                    pPos[pSel, 0]--;
-                    pMoves[pSel]++;
-                    moves.Add(moves.Count, new Dictionary<int, Keys>() { { pSel, Keys.Left } });
-                }
-                if (keyState.IsKeyDown(Keys.Right) && pPos[pSel, 0] < 31)
-                {
-                    pPos[pSel, 0]++;
-                    pMoves[pSel]++;
-                    moves.Add(moves.Count, new Dictionary<int, Keys>() { { pSel, Keys.Right } });
-                }
-                if (keyState.IsKeyDown(Keys.Up) && pPos[pSel, 1] > 0)
-                {
-                    pPos[pSel, 1]--;
-                    pMoves[pSel]++;
-                    moves.Add(moves.Count, new Dictionary<int, Keys>() { { pSel, Keys.Up } });
-                }
-                if (keyState.IsKeyDown(Keys.Down) && pPos[pSel, 1] < 18)
-                {
-                    pPos[pSel, 1]++;
-                    pMoves[pSel]++;
-                    moves.Add(moves.Count, new Dictionary<int, Keys>() { { pSel, Keys.Down } });
-                }                
-            }
-        }
+        
 
         /// <summary>
         /// This is called when the game should draw itself.
@@ -226,10 +211,9 @@ namespace XNATileGame1
 
             drawTiles();
 
-            drawPlayer(p1pos,1);
-            drawPlayer(p2pos,2);
+            drawPlayer(p1units,1);
+            drawPlayer(p2units,2);
 
-            // Draw Hello World
             string output = "Turn: " + turn;
 
             // Find the center of the string
@@ -267,10 +251,10 @@ namespace XNATileGame1
             return tiles;
         }
 
-        private void drawPlayer(int[,] pPos, int currentPlayer)
+        private void drawPlayer(List<Tank> units, int currentPlayer)
         {
 
-            for (int i = pPos.GetUpperBound(0); i >= 0 ; i--)
+            for (int i = 0; i < units.Count; i++)
             {
                 Color tint = Color.White;
                 if (activePlayer == currentPlayer && currentPlayer == 1 && i == p1sel)
@@ -278,8 +262,8 @@ namespace XNATileGame1
                 if (activePlayer == currentPlayer && currentPlayer == 2 && i == p2sel)
                     tint = Color.Blue;
                     
-                board[pPos[i,0],pPos[i,1]] = currentPlayer;
-                spriteBatch.Draw(tank, new Rectangle(pPos[i, 0] * scale, pPos[i, 1] * scale, scale, scale), tint);
+                board[units[i].posX, units[i].posY] = currentPlayer;
+                spriteBatch.Draw(units[i].tex, new Rectangle(units[i].posX * scale, units[i].posY * scale, scale, scale), tint);
             }
         }
 
