@@ -11,6 +11,25 @@ using Microsoft.Xna.Framework.Media;
 
 namespace XNATileGame1
 {
+    enum Screen
+    {
+        StartScreen,
+        GameplayScreen,
+        GameoverScreen
+    }
+
+    public struct ActionEntry
+    {
+        public ActionTypes at;
+        public Tank t;
+        public Keys k;
+    }
+
+    public enum ActionTypes
+    {
+        Movement,
+        Firing
+    }
     /// <summary>
     /// This is the main type for your game
     /// </summary>
@@ -18,32 +37,15 @@ namespace XNATileGame1
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        //Texture2D tank;
-        Texture2D tile_black;
-        Texture2D tile_blue;
-        Texture2D tile_red;
 
-        Tank tank;
+        StartScreen startScreen;
+        GameplayScreen gamePlayScreen;
+        GameoverScreen gameOverScreen;
 
-        int scale;
-        int[,] board;
-        int activePlayer;
-        List<Tank> p1units;
-        int p1sel;
-        int[] p1moves;
-        List<Tank> p2units;
-        int p2sel;
-        int[] p2moves;
-        int turn;
-        Dictionary<int,Dictionary<Tank,Keys>> moves;
-        int moveCount;
-        KeyboardState lastKeyState;
+        Screen currentScreen;
 
-        bool newTurn;
+        public Rectangle WindowBounds { get { return this.Window.ClientBounds; } }
 
-        SpriteFont Font1;
-        Vector2 FontPos;
-        
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -59,28 +61,7 @@ namespace XNATileGame1
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            scale = 25;
-            turn = 0;
-            p1sel = 0;
-            p2sel = 0;
-            newTurn = true;
-            moves = new Dictionary<int, Dictionary<Tank, Keys>>();
-            moveCount = 0;
-
-            #region init board
-            board = new int [32,20];
-            #endregion
-
-            #region init starting positions
-            p1units = new List<Tank>();
-            p1units.Add(new Tank { posX = 18, posY = 18 });
-            p1units.Add(new Tank { posX = 19, posY = 18 });
-
-            p2units = new List<Tank>();
-            p2units.Add(new Tank { posX = 18, posY = 0 });
-            p2units.Add(new Tank { posX = 19, posY = 0 });
-            #endregion
-
+            
             base.Initialize();
         }
 
@@ -94,28 +75,12 @@ namespace XNATileGame1
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
-            for (int i = 0; i < p1units.Count; i++)
-                p1units[i].LoadContent(Content, spriteBatch);
-            for (int i = 0; i < p2units.Count; i++)
-                p2units[i].LoadContent(Content, spriteBatch);
-            tile_black = Content.Load<Texture2D>("tile_black");
-            tile_blue = Content.Load<Texture2D>("tile_blue");
-            tile_red = Content.Load<Texture2D>("tile_red");
+            startScreen = new StartScreen(this);
+            currentScreen = Screen.StartScreen;
 
-            // Create a new SpriteBatch, which can be used to draw textures.
-            Font1 = Content.Load<SpriteFont>("InGame");
-
+            base.LoadContent();
         }
-
-        /// <summary>
-        /// UnloadContent will be called once per game and is the place to unload
-        /// all content.
-        /// </summary>
-        protected override void UnloadContent()
-        {
-            // TODO: Unload any non ContentManager content here
-        }
-
+        
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
@@ -124,79 +89,28 @@ namespace XNATileGame1
         protected override void Update(GameTime gameTime)
         {
             // Allows the game to exit
-            KeyboardState keyState = Keyboard.GetState();
-
-            // TODO: Add your update logic here
-            if (keyState.IsKeyDown(Keys.Escape))
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
                 this.Exit();
 
-            if (keyState != lastKeyState)
+            switch (currentScreen)
             {
-                lastKeyState = keyState;
-
-                #region manage turn
-                if (newTurn)
-                {
-                    newTurn = false;
-                    turn++;
-                    activePlayer = 1;
-
-                    for (int i = 0; i < p1units.Count; i++)
-                    {
-                        p1units[i].movement = 2;
-                    }
-
-                    for (int i = 0; i < p2units.Count; i++)
-                    {
-                        p2units[i].movement = 2;
-                    }
-
-                }
-                #endregion
-
-                #region manage movement
-                switch (activePlayer)
-                {
-                    case 1:
-                        p1units[p1sel].MovePlayer(keyState, moves);
-                        break;
-                    case 2:
-                        p2units[p2sel].MovePlayer(keyState, moves);
-                        break;
-                }
-
-                if (keyState.IsKeyDown(Keys.Space))
-                {
-                    if (moveCount < moves.Count)
-                    {
-                        moveCount++;
-                        if (activePlayer == 1)
-                        {
-                            p1sel++;
-                            if (p1sel >= p1units.Count)
-                            {
-                                p1sel = 0;
-                                activePlayer = 2;
-                            }
-                        }
-                        else
-                        {
-                            p2sel++;
-                            if (p2sel >= p2units.Count)
-                            {
-                                p2sel = 0;
-                                newTurn = true;
-                            }
-                        }
-                    }
-                }
-                #endregion
+                case Screen.StartScreen:
+                    if (startScreen != null)
+                        startScreen.Update();
+                    break;
+                case Screen.GameplayScreen:
+                    if (gamePlayScreen != null)
+                        gamePlayScreen.Update(gameTime);
+                    break;
+                case Screen.GameoverScreen:
+                    if (gameOverScreen != null)
+                        gameOverScreen.Update();
+                    break;
             }
+
             base.Update(gameTime);
         }
-
         
-
         /// <summary>
         /// This is called when the game should draw itself.
         /// </summary>
@@ -206,83 +120,44 @@ namespace XNATileGame1
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
-
             spriteBatch.Begin();
 
-            drawTiles();
+            switch (currentScreen)
+            {
+                case Screen.StartScreen:
+                    if (startScreen != null)
+                        startScreen.Draw(spriteBatch);
+                    break;
+                case Screen.GameplayScreen:
+                    if (gamePlayScreen != null)
+                        gamePlayScreen.Draw(spriteBatch);
+                    break;
+                case Screen.GameoverScreen:
+                    if (gameOverScreen != null)
+                        gameOverScreen.Draw(spriteBatch);
+                    break;
+            }
 
-            drawPlayer(p1units,1);
-            drawPlayer(p2units,2);
-
-            string output = "Turn: " + turn;
-
-            // Find the center of the string
-            FontPos = Font1.MeasureString(output);
-            Vector2 FontOrigin = Font1.MeasureString(output);
-            // Draw the string
-            spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
-            
-            output = "Player 1: " + countTiles(1);
-            FontPos = Font1.MeasureString(output);
-            FontPos.Y += 24;
-            FontOrigin = Font1.MeasureString(output);
-            spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
-            
-            output = "Player 2: " + countTiles(2);
-            FontPos = Font1.MeasureString(output);
-            FontPos.Y += 48;
-            FontOrigin = Font1.MeasureString(output);
-            spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
             spriteBatch.End();
 
             base.Draw(gameTime);
         }
 
-        private int countTiles(int playerNumber)
+
+        public void StartGame()
         {
-            int tiles = 0;
-            for (int i = 4; i < board.GetLength(0); i++)
-            {
-                for (int j = 0; j < board.GetLength(1) - 1; j++)
-                {
-                    tiles += board[i, j] == playerNumber ? 1 : 0;
-                }
-            }
-            return tiles;
+            gamePlayScreen = new GameplayScreen(this);
+            currentScreen = Screen.GameplayScreen;
+            startScreen = null;
         }
 
-        private void drawPlayer(List<Tank> units, int currentPlayer)
+        public void EndGame(int victor, List<ActionEntry> actions)
         {
-
-            for (int i = 0; i < units.Count; i++)
-            {
-                Color tint = Color.White;
-                if (activePlayer == currentPlayer && currentPlayer == 1 && i == p1sel)
-                    tint = Color.Gray;
-                if (activePlayer == currentPlayer && currentPlayer == 2 && i == p2sel)
-                    tint = Color.Blue;
-                    
-                board[units[i].posX, units[i].posY] = currentPlayer;
-                spriteBatch.Draw(units[i].tex, new Rectangle(units[i].posX * scale, units[i].posY * scale, scale, scale), tint);
-            }
-        }
-
-        private void drawTiles()
-        {
-            #region init board
-            for (int i = 6; i < board.GetLength(0); i++)
-            {
-                for (int j = 0; j < board.GetLength(1) - 1; j++)
-                {
-                    if (board[i, j] == 0)
-                        spriteBatch.Draw(tile_black, new Rectangle(i * scale, j * scale, scale, scale), Color.White);
-                    if (board[i, j] == 1)
-                        spriteBatch.Draw(tile_blue, new Rectangle(i * scale, j * scale, scale, scale), Color.White);
-                    if (board[i, j] == 2)
-                        spriteBatch.Draw(tile_red, new Rectangle(i * scale, j * scale, scale, scale), Color.White);
-                }
-            }
-            #endregion           
+            gameOverScreen = new GameoverScreen(this);
+            gameOverScreen.Victor = victor;
+            gameOverScreen.Actions = actions;
+            currentScreen = Screen.GameoverScreen;
+            gamePlayScreen = null;
         }
     }
 }
