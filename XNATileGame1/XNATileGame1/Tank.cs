@@ -16,7 +16,7 @@ namespace XNATileGame1
         public Point pos { get; set; }
         public int hitPoints { get; set; }
         public ContentManager cm { get; set; }
-        public int Player { get; set; }
+        public Player Player { get; set; }
 
         internal void LoadContent(ContentManager content, SpriteBatch spriteBatch)
         {
@@ -26,54 +26,33 @@ namespace XNATileGame1
             this.hitPoints = 1;
         }
 
-        internal void MovePlayer(KeyboardState keyState, List<ActionEntry> actions)
+        internal void MoveUnit(KeyboardState keyState, List<ActionEntry> actions, List<Tank> presentUnits)
         {
-            if (movement > 0)
+            Point destination = getTargetPoint(this.pos,keyState);
+            if (movement > 0 && inBounds(destination) && !isTileOccupied(destination, presentUnits))
             {
                 movement--;
-                if (keyState.IsKeyDown(Keys.Left) && pos.X > 0)
-                {
-                    pos = new Point(pos.X - 1, pos.Y);
-                    actions.Add(new ActionEntry() { at = ActionTypes.Movement, t = this, k = Keys.Left });
-                }
-                if (keyState.IsKeyDown(Keys.Right) && pos.X < 31)
-                {
-                    pos = new Point(pos.X + 1, pos.Y);
-                    actions.Add(new ActionEntry() { at = ActionTypes.Movement, t = this, k = Keys.Right });
-                }
-                if (keyState.IsKeyDown(Keys.Up) && pos.Y > 0)
-                {
-                    pos = new Point(pos.X, pos.Y - 1);
-                    actions.Add(new ActionEntry() { at = ActionTypes.Movement, t = this, k = Keys.Up });
-                }
-                if (keyState.IsKeyDown(Keys.Down) && pos.Y < 18)
-                {
-                    pos = new Point(pos.X, pos.Y + 1);
-                    actions.Add(new ActionEntry() { at = ActionTypes.Movement, t = this, k = Keys.Down });
-                }
-            }
+                actions.Add(new ActionEntry() { actionType = ActionTypes.Movement, tank = this, actionFrom = pos, actionTo = destination });
+                pos = destination;
+            }            
+        }
+
+        /// <summary>
+        /// Detect whether or not a specified point falls within tile boundary
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        private bool inBounds(Point p)
+        {
+            //TODO: abstract boundary in Game1 class
+            return p.X >= 0  && p.X <= 31 && p.Y >= 0  && p.Y <= 18;
         }
 
         internal Point Fire(KeyboardState keyState, List<ActionEntry> actions)
         {
-            actions.Add(new ActionEntry() { at = ActionTypes.Firing, t = this, k = Keys.Down });
-            if (keyState.IsKeyDown(Keys.Left) && pos.X > 0)
-            {
-                return new Point(pos.X - 1, pos.Y);
-            }
-            if (keyState.IsKeyDown(Keys.Right) && pos.X < 31)
-            {
-                return new Point(pos.X + 1, pos.Y);
-            }
-            if (keyState.IsKeyDown(Keys.Up) && pos.Y > 0)
-            {
-                return new Point(pos.X, pos.Y - 1);
-            }
-            if (keyState.IsKeyDown(Keys.Down) && pos.Y < 18)
-            {
-                return new Point(pos.X, pos.Y + 1);
-            }
-            return new Point();
+            Point target = getTargetPoint(this.pos, keyState);
+            actions.Add(new ActionEntry() { actionType = ActionTypes.Firing, tank = this, actionFrom = pos, actionTo = target });
+            return target;
         }
 
         internal void hit()
@@ -81,6 +60,37 @@ namespace XNATileGame1
             hitPoints--;
             if (hitPoints == 0)
                 tex = cm.Load<Texture2D>("tank_dead");
+        }
+
+        /// <summary>
+        /// Resolve a directional action to it's target tile
+        /// </summary>
+        /// <param name="origin">Point from which the action was intiated</param>
+        /// <param name="key">Direction of impact</param>
+        /// <returns>Destination or target point</returns>
+        internal Point getTargetPoint(Point origin, KeyboardState keyState)
+        {
+            Point destination = origin;
+            if(keyState.IsKeyDown(Keys.Left))
+                    destination = new Point(origin.X - 1, origin.Y);
+            if(keyState.IsKeyDown(Keys.Right))
+                    destination = new Point(origin.X + 1, origin.Y);
+            if(keyState.IsKeyDown(Keys.Up))
+                    destination = new Point(origin.X, origin.Y - 1);
+            if(keyState.IsKeyDown(Keys.Down))
+                    destination = new Point(origin.X, origin.Y + 1);
+            
+            return destination;
+        }
+
+        private static bool isTileOccupied(Point target, List<Tank> units)
+        {
+            foreach (Tank t in units)
+            {
+                if (t.pos.X == target.X && t.pos.Y == target.Y)
+                    return true;
+            }
+            return false;
         }
     }
 }

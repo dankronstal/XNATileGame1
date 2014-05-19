@@ -20,9 +20,11 @@ namespace XNATileGame1
 
     public struct ActionEntry
     {
-        public ActionTypes at;
-        public Tank t;
-        public Keys k;
+        public ActionTypes actionType;
+        public Tank tank;
+        public Keys key;
+        public Point actionFrom;
+        public Point actionTo;
     }
 
     public enum ActionTypes

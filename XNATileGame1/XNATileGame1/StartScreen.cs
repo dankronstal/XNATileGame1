@@ -14,6 +14,7 @@ namespace XNATileGame1
         SpriteBatch spriteBatch;
         private KeyboardState lastState;
         SpriteFont Font1;
+        SpriteFont Font2;
 
         public StartScreen(Game1 game)
         {
@@ -32,6 +33,7 @@ namespace XNATileGame1
 
             // Create a new SpriteBatch, which can be used to draw textures.
             Font1 = game.Content.Load<SpriteFont>("Title");
+            Font2 = game.Content.Load<SpriteFont>("InGame");
         }
 
         public void Update()
@@ -56,6 +58,18 @@ namespace XNATileGame1
             FontOrigin.Y = FontOrigin.Y / 2;
             
             spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
+
+            output = "Controls:\n";
+            output += "  Navigate with arrow keys\n";
+            output += "  Hold left-Alt to engage firing, and see target tiles\n";
+            output += "  Press space to select the next unit";
+
+            FontPos.Y += 100;
+            FontOrigin = Font2.MeasureString(output);
+            FontOrigin.X = FontOrigin.X / 2;
+            FontOrigin.Y = FontOrigin.Y / 2;
+
+            spriteBatch.DrawString(Font2, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
         }
     }
 }

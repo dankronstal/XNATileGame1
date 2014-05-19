@@ -13,17 +13,17 @@ namespace XNATileGame1
         Game1 game;
         SpriteBatch spriteBatch;
 
-        //Texture2D tank;
         Texture2D tile_black;
         Texture2D tile_blue;
         Texture2D tile_red;
 
+        public Player p1;
+        public Player p2;
+
         int scale;
         int[,] board;
         int activePlayer;
-        List<Tank> p1units;
         int p1sel;
-        List<Tank> p2units;
         int p2sel;
         int turn;
         List<ActionEntry> actions;
@@ -63,15 +63,18 @@ namespace XNATileGame1
             #region init board
             board = new int[32, 20];
             #endregion
+            
+            #region init player
+            p1 = new Player() { Id = 1, Resources = 0 };
+            List<Tank> p1units = new List<Tank>();
+            p1units.Add(new Tank { Player = p1, pos = new Point(18, 12) });
+            p1units.Add(new Tank { Player = p1, pos = new Point(19, 12) });
+            p1.Units = p1units;
 
-            #region init starting positions
-            p1units = new List<Tank>();
-            p1units.Add(new Tank { Player = 1, pos = new Point(18, 12) });
-            p1units.Add(new Tank { Player = 1, pos = new Point(19, 12) });
-
-            p2units = new List<Tank>();
-            p2units.Add(new Tank { Player = 2, pos = new Point(18, 10) });
-            p2units.Add(new Tank { Player = 2, pos = new Point(19, 10) });
+            List<Tank> p2units = new List<Tank>();
+            p2units.Add(new Tank { Player = p2, pos = new Point(18, 10) });
+            p2units.Add(new Tank { Player = p2, pos = new Point(19, 10) });
+            p2 = new Player() { Id = 2, Resources = 0, Units = p2units };
             #endregion
 
         }
@@ -86,10 +89,10 @@ namespace XNATileGame1
             spriteBatch = new SpriteBatch(game.GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
-            for (int i = 0; i < p1units.Count; i++)
-                p1units[i].LoadContent(game.Content, spriteBatch);
-            for (int i = 0; i < p2units.Count; i++)
-                p2units[i].LoadContent(game.Content, spriteBatch);
+            for (int i = 0; i < p1.Units.Count; i++)
+                p1.Units[i].LoadContent(game.Content, spriteBatch);
+            for (int i = 0; i < p2.Units.Count; i++)
+                p2.Units[i].LoadContent(game.Content, spriteBatch);
             tile_black = game.Content.Load<Texture2D>("tile_black");
             tile_blue = game.Content.Load<Texture2D>("tile_blue");
             tile_red = game.Content.Load<Texture2D>("tile_red");
@@ -115,14 +118,14 @@ namespace XNATileGame1
                 turn++;
                 activePlayer = 1;
 
-                for (int i = 0; i < p1units.Count; i++)
+                for (int i = 0; i < p1.Units.Count; i++)
                 {
-                    p1units[i].movement = 2;
+                    p1.Units[i].movement = 2;
                 }
 
-                for (int i = 0; i < p2units.Count; i++)
+                for (int i = 0; i < p2.Units.Count; i++)
                 {
-                    p2units[i].movement = 2;
+                    p2.Units[i].movement = 2;
                 }
 
             }
@@ -146,10 +149,10 @@ namespace XNATileGame1
                         switch (activePlayer)
                         {
                             case 1:
-                                checkForHits(p2units, p1units[p1sel], p1units[p1sel].Fire(keyState, actions));
+                                checkForHits(p2.Units, p1.Units[p1sel], p1.Units[p1sel].Fire(keyState, actions));
                                 break;
                             case 2:
-                                checkForHits(p1units, p2units[p2sel], p2units[p2sel].Fire(keyState, actions));
+                                checkForHits(p1.Units, p2.Units[p2sel], p2.Units[p2sel].Fire(keyState, actions));
                                 break;
                         }
                         #endregion
@@ -157,13 +160,17 @@ namespace XNATileGame1
                     else
                     {
                         #region manage movement
+                        List<Tank> units = new List<Tank>();
+                        units.AddRange(p1.Units);
+                        units.AddRange(p2.Units);
                         switch (activePlayer)
                         {
                             case 1:
-                                p1units[p1sel].MovePlayer(keyState, actions);
+                                p1.Units[p1sel].MoveUnit(keyState, actions, units);
                                 break;
                             case 2:
-                                p2units[p2sel].MovePlayer(keyState, actions);
+
+                                p2.Units[p2sel].MoveUnit(keyState, actions, units);
                                 break;
                         }
                         #endregion
@@ -180,7 +187,7 @@ namespace XNATileGame1
                             if (activePlayer == 1)
                             {
                                 p1sel++;
-                                if (p1sel >= p1units.Count)
+                                if (p1sel >= p1.Units.Count)
                                 {
                                     p1sel = 0;
                                     activePlayer = 2;
@@ -189,7 +196,7 @@ namespace XNATileGame1
                             else
                             {
                                 p2sel++;
-                                if (p2sel >= p2units.Count)
+                                if (p2sel >= p2.Units.Count)
                                 {
                                     p2sel = 0;
                                     newTurn = true;
@@ -210,8 +217,8 @@ namespace XNATileGame1
         {
             drawTiles(spriteBatch);
 
-            drawPlayer(p1units, 1, spriteBatch);
-            drawPlayer(p2units, 2, spriteBatch);
+            drawPlayer(p1.Units, 1, spriteBatch);
+            drawPlayer(p2.Units, 2, spriteBatch);
 
             string output = "Turn: " + turn;
 
@@ -253,7 +260,7 @@ namespace XNATileGame1
                     enemyUnits.Remove(deadTank);
 
                 if (enemyUnits.Count == 0)
-                    game.EndGame(firingUnit.Player, actions);
+                    game.EndGame(firingUnit.Player.Id, actions);
             }
         }
 
@@ -277,9 +284,13 @@ namespace XNATileGame1
             {
                 Color tint = Color.White;
                 if (activePlayer == currentPlayer && currentPlayer == 1 && i == p1sel)
+                {
                     tint = Color.Gray;
+                }
                 if (activePlayer == currentPlayer && currentPlayer == 2 && i == p2sel)
+                {
                     tint = Color.Blue;
+                }
 
                 board[units[i].pos.X, units[i].pos.Y] = currentPlayer;
                 spriteBatch.Draw(units[i].tex, new Rectangle(units[i].pos.X * scale, units[i].pos.Y * scale, scale, scale), tint);
@@ -314,10 +325,10 @@ namespace XNATileGame1
                 switch (activePlayer)
                 {
                     case 1:
-                        tank = p1units[p1sel];
+                        tank = p1.Units[p1sel];
                         break;
                     case 2:
-                        tank = p2units[p2sel];
+                        tank = p2.Units[p2sel];
                         break;
                 }
                 #endregion

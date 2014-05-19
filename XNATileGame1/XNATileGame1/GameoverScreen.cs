@@ -42,9 +42,9 @@ namespace XNATileGame1
         {
             KeyboardState keyState = Keyboard.GetState();
             if (keyState.IsKeyDown(Keys.Up))
-                FontPos.Y++;
+                FontPos.Y+=5;
             if (keyState.IsKeyDown(Keys.Down))
-                FontPos.Y--;
+                FontPos.Y-=5;
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -55,13 +55,15 @@ namespace XNATileGame1
             Vector2 FontOrigin = Font1.MeasureString(output);
             FontOrigin = new Vector2(FontOrigin.X / 2, FontOrigin.Y / 2);
 
+            spriteBatch.Draw(new Texture2D(spriteBatch.GraphicsDevice, 10, 20), new Rectangle(10, 20, 10, 20), Color.LawnGreen);//not working
+
             spriteBatch.DrawString(Font1, output, FontPosTitle, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
 
             output = "";
 
             foreach (ActionEntry ae in Actions)
             {
-                output += "Player " + ae.t.Player + " : Action [" + ae.at.ToString() + "] : Direction [" + ae.k + "]\n"; 
+                output += "Player " + ae.tank.Player + " : Action [" + ae.actionType.ToString() + "] : From " + ae.actionFrom.ToString() + " : To " + ae.actionTo.ToString() + "\n"; 
             }
 
             FontOrigin = Font2.MeasureString(output);
