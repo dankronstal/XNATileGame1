@@ -11,12 +11,14 @@ namespace XNATileGame1
 {
     public class Tank
     {
+        public static int maxMovement = 2;
         public Texture2D tex { get; set; }
         public int movement { get; set; }
         public Point pos { get; set; }
         public int hitPoints { get; set; }
         public ContentManager cm { get; set; }
         public Player Player { get; set; }
+        public bool IsActive { get; set; }
 
         internal void LoadContent(ContentManager content, SpriteBatch spriteBatch)
         {
@@ -91,6 +93,11 @@ namespace XNATileGame1
                     return true;
             }
             return false;
+        }
+
+        internal void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(tex, new Rectangle(pos.X * Game1.Scale, pos.Y * Game1.Scale, Game1.Scale, Game1.Scale), null, (IsActive ? Player.Tint : Color.White), 0f, new Vector2(pos.X, pos.Y), Player.Effect, 0f);
         }
     }
 }

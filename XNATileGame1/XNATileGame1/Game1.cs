@@ -46,6 +46,8 @@ namespace XNATileGame1
 
         Screen currentScreen;
 
+        public static int Scale = 25;
+
         public Rectangle WindowBounds { get { return this.Window.ClientBounds; } }
 
         public Game1()
@@ -153,7 +155,7 @@ namespace XNATileGame1
             startScreen = null;
         }
 
-        public void EndGame(int victor, List<ActionEntry> actions)
+        public void EndGame(Player victor, List<ActionEntry> actions)
         {
             gameOverScreen = new GameoverScreen(this);
             gameOverScreen.Victor = victor;

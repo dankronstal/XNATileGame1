@@ -13,7 +13,7 @@ namespace XNATileGame1
         private Game1 game;
         SpriteBatch spriteBatch;
         SpriteFont Font1, Font2;
-        public int Victor { get; set; }
+        public Player Victor { get; set; }
         public List<ActionEntry> Actions { get; set; }
         Vector2 FontPos;
 
@@ -49,7 +49,7 @@ namespace XNATileGame1
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            string output = "Player " + Victor + " is the winner!";
+            string output = "Player " + Victor.Id + " is the winner!";
 
             Vector2 FontPosTitle = new Vector2(game.WindowBounds.Width / 2, game.WindowBounds.Height / 2);
             Vector2 FontOrigin = Font1.MeasureString(output);
@@ -63,7 +63,7 @@ namespace XNATileGame1
 
             foreach (ActionEntry ae in Actions)
             {
-                output += "Player " + ae.tank.Player + " : Action [" + ae.actionType.ToString() + "] : From " + ae.actionFrom.ToString() + " : To " + ae.actionTo.ToString() + "\n"; 
+                output += "Player " + ae.tank.Player.Id + " : Action [" + ae.actionType.ToString() + "] : From " + ae.actionFrom.ToString() + " : To " + ae.actionTo.ToString() + "\n"; 
             }
 
             FontOrigin = Font2.MeasureString(output);

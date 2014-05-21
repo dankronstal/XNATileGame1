@@ -19,12 +19,9 @@ namespace XNATileGame1
 
         public Player p1;
         public Player p2;
-
-        int scale;
-        int[,] board;
+        public Board board;
+        
         int activePlayer;
-        int p1sel;
-        int p2sel;
         int turn;
         List<ActionEntry> actions;
         int moveCount;
@@ -52,29 +49,27 @@ namespace XNATileGame1
         protected void Initialize()
         {
             // TODO: Add your initialization logic here
-            scale = 25;
             turn = 0;
-            p1sel = 0;
-            p2sel = 0;
             newTurn = true;
             actions = new List<ActionEntry>();
             moveCount = 0;
 
             #region init board
-            board = new int[32, 20];
+            board = new Board() { Tiles = new int[32, 20] };
             #endregion
             
             #region init player
-            p1 = new Player() { Id = 1, Resources = 0 };
+            p1 = new Player() { Id = 1, Resources = 0, Tint = Color.Gray, Effect = SpriteEffects.None, IsActive = true };
             List<Tank> p1units = new List<Tank>();
-            p1units.Add(new Tank { Player = p1, pos = new Point(18, 12) });
+            p1units.Add(new Tank { Player = p1, pos = new Point(18, 12), IsActive = true });
             p1units.Add(new Tank { Player = p1, pos = new Point(19, 12) });
             p1.Units = p1units;
 
+            p2 = new Player() { Id = 2, Resources = 0, Tint = Color.Gray, Effect = SpriteEffects.FlipVertically };
             List<Tank> p2units = new List<Tank>();
             p2units.Add(new Tank { Player = p2, pos = new Point(18, 10) });
             p2units.Add(new Tank { Player = p2, pos = new Point(19, 10) });
-            p2 = new Player() { Id = 2, Resources = 0, Units = p2units };
+            p2.Units = p2units;
             #endregion
 
         }
@@ -111,7 +106,7 @@ namespace XNATileGame1
         {
             KeyboardState keyState = Keyboard.GetState();
 
-            #region manage turn
+            #region start new turn
             if (newTurn)
             {
                 newTurn = false;
@@ -131,10 +126,9 @@ namespace XNATileGame1
             }
             #endregion
 
-            if (keyState != lastKeyState)// && !inAction)
+            if (keyState != lastKeyState)
             {
-                lastKeyState = keyState;
-                //inAction = true;                
+                lastKeyState = keyState;          
 
                 if (
                     keyState.IsKeyDown(Keys.Up) ||
@@ -143,65 +137,55 @@ namespace XNATileGame1
                     keyState.IsKeyDown(Keys.Right)
                     )
                 {
-                    if (keyState.IsKeyDown(Keys.RightAlt))
+                    if (keyState.IsKeyDown(Keys.RightAlt) && keyState.GetPressedKeys().Length == 2)
                     {
                         #region manage firing
+                        checkForHits(OpponentPlayer().Units, ActivePlayer().ActiveUnit, ActivePlayer().ActiveUnit.Fire(keyState, actions));
+                        /*
                         switch (activePlayer)
                         {
                             case 1:
-                                checkForHits(p2.Units, p1.Units[p1sel], p1.Units[p1sel].Fire(keyState, actions));
+                                checkForHits(p2.Units, p1.ActiveUnit(), p1.ActiveUnit().Fire(keyState, actions));
                                 break;
                             case 2:
                                 checkForHits(p1.Units, p2.Units[p2sel], p2.Units[p2sel].Fire(keyState, actions));
                                 break;
                         }
+                        */
                         #endregion
                     }
-                    else
+                    else if (keyState.GetPressedKeys().Length == 1)
                     {
                         #region manage movement
                         List<Tank> units = new List<Tank>();
                         units.AddRange(p1.Units);
                         units.AddRange(p2.Units);
-                        switch (activePlayer)
-                        {
-                            case 1:
-                                p1.Units[p1sel].MoveUnit(keyState, actions, units);
-                                break;
-                            case 2:
 
-                                p2.Units[p2sel].MoveUnit(keyState, actions, units);
-                                break;
-                        }
+                        ActivePlayer().ActiveUnit.MoveUnit(keyState, actions, units);
                         #endregion
                     }
                 }
-                else
+                else if (keyState.IsKeyDown(Keys.Space))
                 {
                     #region end turn
-                    if (keyState.IsKeyDown(Keys.Space))
+                    List<Player> players = new List<Player>() { p1, p2 };
+                    Player activeP = players.Where(x => x.IsActive == true).First();
+
+                    if (!activeP.SelectNextUnit())
                     {
-                        if (moveCount < actions.Count)
+                        activeP.Units.First(x => x.IsActive).IsActive = false;
+                        activeP.IsActive = false;
+
+                        activeP = players.First(x => x.Id != activeP.Id);
+
+                        activeP.IsActive = true;
+                        activeP.Units.First().IsActive = true;
+
+                        if (activeP == p2)
                         {
-                            moveCount++;
-                            if (activePlayer == 1)
-                            {
-                                p1sel++;
-                                if (p1sel >= p1.Units.Count)
-                                {
-                                    p1sel = 0;
-                                    activePlayer = 2;
-                                }
-                            }
-                            else
-                            {
-                                p2sel++;
-                                if (p2sel >= p2.Units.Count)
-                                {
-                                    p2sel = 0;
-                                    newTurn = true;
-                                }
-                            }
+                            newTurn = true;
+                            p1.NewTurn();
+                            p2.NewTurn();
                         }
                     }
                     #endregion
@@ -217,9 +201,10 @@ namespace XNATileGame1
         {
             drawTiles(spriteBatch);
 
-            drawPlayer(p1.Units, 1, spriteBatch);
-            drawPlayer(p2.Units, 2, spriteBatch);
+            p1.Draw(board, p2, spriteBatch);
+            p2.Draw(board, p1, spriteBatch);
 
+            #region Turn counter
             string output = "Turn: " + turn;
 
             // Find the center of the string
@@ -227,18 +212,29 @@ namespace XNATileGame1
             Vector2 FontOrigin = Font1.MeasureString(output);
             // Draw the string
             spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
+            #endregion
 
-            output = "Player 1: " + countTiles(1);
-            FontPos = Font1.MeasureString(output);
-            FontPos.Y += 24;
-            FontOrigin = Font1.MeasureString(output);
-            spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
-
-            output = "Player 2: " + countTiles(2);
+            #region Player stats
+            output = "Player 1: \n" + " - Units " + p1.Units.Count + "\n - Tiles " + p1.Tiles + "\n - Res.: " + p1.Resources.ToString("##");
             FontPos = Font1.MeasureString(output);
             FontPos.Y += 48;
             FontOrigin = Font1.MeasureString(output);
             spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
+
+            output = "Player 2: \n" + " - Units " + p2.Units.Count + "\n - Tiles " + p2.Tiles + "\n - Res.: " + p2.Resources.ToString("##");
+            FontPos = Font1.MeasureString(output);
+            FontPos.Y += 176;
+            FontOrigin = Font1.MeasureString(output);
+            spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
+            #endregion
+
+            #region Unit stats
+            output = "Active Unit: \n" + " - Health " + ActivePlayer().ActiveUnit.hitPoints + "\n - Moves  " + ActivePlayer().ActiveUnit.movement+ "\n - Kills  ?";
+            FontPos = Font1.MeasureString(output);
+            FontPos.Y += 300;
+            FontOrigin = Font1.MeasureString(output);
+            spriteBatch.DrawString(Font1, output, FontPos, Color.Crimson, 0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
+            #endregion
         }
 
 
@@ -260,56 +256,29 @@ namespace XNATileGame1
                     enemyUnits.Remove(deadTank);
 
                 if (enemyUnits.Count == 0)
-                    game.EndGame(firingUnit.Player.Id, actions);
-            }
-        }
-
-        private int countTiles(int playerNumber)
-        {
-            int tiles = 0;
-            for (int i = 4; i < board.GetLength(0); i++)
-            {
-                for (int j = 0; j < board.GetLength(1) - 1; j++)
-                {
-                    tiles += board[i, j] == playerNumber ? 1 : 0;
-                }
-            }
-            return tiles;
-        }
-
-        private void drawPlayer(List<Tank> units, int currentPlayer, SpriteBatch spriteBatch)
-        {
-
-            for (int i = 0; i < units.Count; i++)
-            {
-                Color tint = Color.White;
-                if (activePlayer == currentPlayer && currentPlayer == 1 && i == p1sel)
-                {
-                    tint = Color.Gray;
-                }
-                if (activePlayer == currentPlayer && currentPlayer == 2 && i == p2sel)
-                {
-                    tint = Color.Blue;
-                }
-
-                board[units[i].pos.X, units[i].pos.Y] = currentPlayer;
-                spriteBatch.Draw(units[i].tex, new Rectangle(units[i].pos.X * scale, units[i].pos.Y * scale, scale, scale), tint);
+                    game.EndGame(firingUnit.Player, actions);
             }
         }
 
         private void drawTiles(SpriteBatch spriteBatch)
         {
             #region init board
-            for (int i = 6; i < board.GetLength(0); i++)
+            for (int i = 6; i < board.Tiles.GetLength(0); i++)
             {
-                for (int j = 0; j < board.GetLength(1) - 1; j++)
+                for (int j = 0; j < board.Tiles.GetLength(1) - 1; j++)
                 {
-                    if (board[i, j] == 0)
-                        drawTile(i, j, tile_black, spriteBatch);
-                    if (board[i, j] == 1)
-                        drawTile(i, j, tile_blue, spriteBatch);
-                    if (board[i, j] == 2)
-                        drawTile(i, j, tile_red, spriteBatch);
+                    switch(board.WhoOwns(i,j))
+                    {
+                        case 1:
+                            drawTile(i, j, tile_blue, spriteBatch);
+                            break;
+                        case 2:
+                            drawTile(i, j, tile_red, spriteBatch);
+                            break;
+                        default:
+                            drawTile(i, j, tile_black, spriteBatch);
+                            break;
+                    }
                 }
             }
             #endregion
@@ -317,29 +286,32 @@ namespace XNATileGame1
 
         private void drawTile(int x, int y, Texture2D t, SpriteBatch spriteBatch)
         {
-            KeyboardState keyState = Keyboard.GetState();
-            Tank tank = new Tank();
+            KeyboardState keyState = Keyboard.GetState();            
+            
             if (keyState.IsKeyDown(Keys.RightAlt))
             {
-                #region manage firing
-                switch (activePlayer)
-                {
-                    case 1:
-                        tank = p1.Units[p1sel];
-                        break;
-                    case 2:
-                        tank = p2.Units[p2sel];
-                        break;
-                }
-                #endregion
+                #region manage firing indicators
+                Tank tank = ActivePlayer().ActiveUnit;
                 if (((x - tank.pos.X == 1 || x - tank.pos.X == -1) && y - tank.pos.Y == 0) ||
                     ((y - tank.pos.Y == 1 || y - tank.pos.Y == -1) && x - tank.pos.X == 0))
-                    spriteBatch.Draw(t, new Rectangle(x * scale, y * scale, scale, scale), Color.Yellow);
+                    spriteBatch.Draw(t, new Rectangle(x * Game1.Scale, y * Game1.Scale, Game1.Scale, Game1.Scale), Color.Yellow);
                 else
-                    spriteBatch.Draw(t, new Rectangle(x * scale, y * scale, scale, scale), Color.White);
+                    spriteBatch.Draw(t, new Rectangle(x * Game1.Scale, y * Game1.Scale, Game1.Scale, Game1.Scale), Color.White);
+                #endregion
             }
             else
-                spriteBatch.Draw(t, new Rectangle(x * scale, y * scale, scale, scale), Color.White);
+                spriteBatch.Draw(t, new Rectangle(x * Game1.Scale, y * Game1.Scale, Game1.Scale, Game1.Scale), Color.White);
+           
+        }
+
+        private Player ActivePlayer()
+        {
+            return new List<Player>() { p1, p2 }.First(x => x.IsActive == true);
+        }
+
+        private Player OpponentPlayer()
+        {
+            return new List<Player>() { p1, p2 }.First(x => x.IsActive == false);
         }
     }
 }

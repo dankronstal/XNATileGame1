@@ -72,6 +72,7 @@
     <Reference Include="System.Net" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Board.cs" />
     <Compile Include="GameoverScreen.cs" />
     <Compile Include="GameplayScreen.cs" />
     <Compile Include="Player.cs" />
