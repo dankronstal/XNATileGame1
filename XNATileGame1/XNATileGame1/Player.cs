@@ -12,19 +12,19 @@ namespace XNATileGame1
         public int Id { get; set; }
         public int Tiles { get; set; }
         public double Resources  { get; set; }
-        public List<Tank> Units { get; set; }
+        public List<Unit> Units { get; set; }
         public SpriteEffects Effect { get; set; }
         public Color Tint { get; set; }
         public bool IsActive { get; set; }
-        public Tank ActiveUnit { get { return Units.First(x => x.IsActive == true); } }
+        public Unit ActiveUnit { get { return Units.First(x => x.Status == UnitStatus.Active); } }
 
 
         public void Draw(Board board, Player opponent, SpriteBatch spriteBatch)
         {            
-            foreach (Tank t in Units)
+            foreach (Unit u in Units)
             {
-                board.CaptureTile(new Point(t.pos.X, t.pos.Y), this, opponent);
-                t.Draw(spriteBatch);
+                board.CaptureTile(new Point(u.pos.X, u.pos.Y), this, opponent);
+                u.Draw(spriteBatch);
             }
         }
 
@@ -32,19 +32,20 @@ namespace XNATileGame1
         {
             Resources += Tiles * 0.1f;
 
-            foreach (Tank t in Units)
+            foreach (Unit u in Units)
             {
-                t.movement = Tank.maxMovement;
+                u.movement = u.maxMovement;
+                u.Status = UnitStatus.Waiting;
             }
         }
 
         internal bool SelectNextUnit()
         {
-            List<Tank> tanks = Units.Where(x => x.movement > 0).ToList();
-            if (tanks.Count > 0)
+            List<Unit> units = Units.Where(x => x.Status == UnitStatus.Waiting).ToList();
+            if (units.Count > 0)
             {
-                Units.First(x => x.IsActive == true).IsActive = false;
-                tanks.First().IsActive = true;
+                Units.First(x => x.Status == UnitStatus.Active).Status = UnitStatus.Done;
+                units.First().Status = UnitStatus.Active;
                 return true;
             }
             return false;

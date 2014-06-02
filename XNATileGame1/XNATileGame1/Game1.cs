@@ -21,7 +21,7 @@ namespace XNATileGame1
     public struct ActionEntry
     {
         public ActionTypes actionType;
-        public Tank tank;
+        public Unit unit;
         public Keys key;
         public Point actionFrom;
         public Point actionTo;
@@ -30,7 +30,15 @@ namespace XNATileGame1
     public enum ActionTypes
     {
         Movement,
-        Firing
+        Firing,
+        Deployment
+    }
+
+    public enum UnitStatus
+    {
+        Waiting,
+        Active,
+        Done
     }
     /// <summary>
     /// This is the main type for your game

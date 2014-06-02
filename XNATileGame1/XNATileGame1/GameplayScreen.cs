@@ -60,15 +60,17 @@ namespace XNATileGame1
             
             #region init player
             p1 = new Player() { Id = 1, Resources = 0, Tint = Color.Gray, Effect = SpriteEffects.None, IsActive = true };
-            List<Tank> p1units = new List<Tank>();
-            p1units.Add(new Tank { Player = p1, pos = new Point(18, 12), IsActive = true });
-            p1units.Add(new Tank { Player = p1, pos = new Point(19, 12) });
+            List<Unit> p1units = new List<Unit>();
+            p1units.Add(new Tank { Player = p1, pos = new Point(17, 12), Status = UnitStatus.Active });
+            p1units.Add(new Factory { Player = p1, pos = new Point(18, 12), Status = UnitStatus.Waiting});
+            p1units.Add(new Tank { Player = p1, pos = new Point(19, 12), Status = UnitStatus.Waiting });
             p1.Units = p1units;
 
             p2 = new Player() { Id = 2, Resources = 0, Tint = Color.Gray, Effect = SpriteEffects.FlipVertically };
-            List<Tank> p2units = new List<Tank>();
-            p2units.Add(new Tank { Player = p2, pos = new Point(18, 10) });
-            p2units.Add(new Tank { Player = p2, pos = new Point(19, 10) });
+            List<Unit> p2units = new List<Unit>();
+            p2units.Add(new Tank { Player = p2, pos = new Point(17, 6), Status = UnitStatus.Waiting });
+            p2units.Add(new Factory { Player = p2, pos = new Point(18, 6), Status = UnitStatus.Waiting });
+            p2units.Add(new Tank { Player = p2, pos = new Point(19, 6), Status = UnitStatus.Waiting });
             p2.Units = p2units;
             #endregion
 
@@ -115,12 +117,12 @@ namespace XNATileGame1
 
                 for (int i = 0; i < p1.Units.Count; i++)
                 {
-                    p1.Units[i].movement = 2;
+                    p1.Units[i].movement = p1.Units[i].maxMovement;
                 }
 
                 for (int i = 0; i < p2.Units.Count; i++)
                 {
-                    p2.Units[i].movement = 2;
+                    p2.Units[i].movement = p2.Units[i].maxMovement;
                 }
 
             }
@@ -131,39 +133,41 @@ namespace XNATileGame1
                 lastKeyState = keyState;          
 
                 if (
-                    keyState.IsKeyDown(Keys.Up) ||
+                    (keyState.IsKeyDown(Keys.Up) ||
                     keyState.IsKeyDown(Keys.Down) ||
                     keyState.IsKeyDown(Keys.Left) ||
-                    keyState.IsKeyDown(Keys.Right)
+                    keyState.IsKeyDown(Keys.Right)) &&
+                    ActivePlayer().ActiveUnit.movement > 0
                     )
                 {
                     if (keyState.IsKeyDown(Keys.RightAlt) && keyState.GetPressedKeys().Length == 2)
                     {
-                        #region manage firing
-                        checkForHits(OpponentPlayer().Units, ActivePlayer().ActiveUnit, ActivePlayer().ActiveUnit.Fire(keyState, actions));
-                        /*
-                        switch (activePlayer)
+                        #region manage non-movement actions
+                        if (ActivePlayer().ActiveUnit.GetType() == typeof(Tank))
                         {
-                            case 1:
-                                checkForHits(p2.Units, p1.ActiveUnit(), p1.ActiveUnit().Fire(keyState, actions));
-                                break;
-                            case 2:
-                                checkForHits(p1.Units, p2.Units[p2sel], p2.Units[p2sel].Fire(keyState, actions));
-                                break;
+                            checkForHits(OpponentPlayer().Units, ActivePlayer().ActiveUnit, ((Tank)ActivePlayer().ActiveUnit).Fire(keyState, actions));
                         }
-                        */
+                        if (ActivePlayer().ActiveUnit.GetType() == typeof(Factory))
+                        {
+                            if (ActivePlayer().Resources >= 200) //TODO: units should have their own cost
+                            {
+                                Tank t = ((Factory)ActivePlayer().ActiveUnit).Deploy(keyState, actions);
+                                t.LoadContent(game.Content, spriteBatch);
+                            }
+                        }
                         #endregion
                     }
                     else if (keyState.GetPressedKeys().Length == 1)
                     {
                         #region manage movement
-                        List<Tank> units = new List<Tank>();
+                        List<Unit> units = new List<Unit>();
                         units.AddRange(p1.Units);
                         units.AddRange(p2.Units);
 
                         ActivePlayer().ActiveUnit.MoveUnit(keyState, actions, units);
                         #endregion
                     }
+                    ActivePlayer().ActiveUnit.movement--;
                 }
                 else if (keyState.IsKeyDown(Keys.Space))
                 {
@@ -173,20 +177,21 @@ namespace XNATileGame1
 
                     if (!activeP.SelectNextUnit())
                     {
-                        activeP.Units.First(x => x.IsActive).IsActive = false;
+                        activeP.Units.First(x => x.Status == UnitStatus.Active).Status = UnitStatus.Done;
                         activeP.IsActive = false;
 
                         activeP = players.First(x => x.Id != activeP.Id);
 
                         activeP.IsActive = true;
-                        activeP.Units.First().IsActive = true;
 
-                        if (activeP == p2)
+                        if (activeP == p1)
                         {
                             newTurn = true;
                             p1.NewTurn();
                             p2.NewTurn();
                         }
+
+                        activeP.Units.First().Status = UnitStatus.Active;
                     }
                     #endregion
                 }
@@ -238,22 +243,22 @@ namespace XNATileGame1
         }
 
 
-        private void checkForHits(List<Tank> enemyUnits, Tank firingUnit, Point hitPoint)
+        private void checkForHits(List<Unit> enemyUnits, Unit firingUnit, Point hitPoint)
         {
-            Tank deadTank = null;
+            Unit dead = null;
             if (firingUnit.pos != hitPoint && hitPoint != new Point())
             {
-                foreach (Tank t in enemyUnits)
+                foreach (Unit u in enemyUnits)
                 {
-                    if (t.pos.X == hitPoint.X && t.pos.Y == hitPoint.Y)
+                    if (u.pos.X == hitPoint.X && u.pos.Y == hitPoint.Y)
                     {
-                        t.hit();
-                        if (t.hitPoints == 0)
-                            deadTank = t;
+                        u.hit();
+                        if (u.hitPoints == 0)
+                            dead = u;
                     }
                 }
-                if (deadTank != null)
-                    enemyUnits.Remove(deadTank);
+                if (dead != null)
+                    enemyUnits.Remove(dead);
 
                 if (enemyUnits.Count == 0)
                     game.EndGame(firingUnit.Player, actions);
@@ -291,9 +296,10 @@ namespace XNATileGame1
             if (keyState.IsKeyDown(Keys.RightAlt))
             {
                 #region manage firing indicators
-                Tank tank = ActivePlayer().ActiveUnit;
-                if (((x - tank.pos.X == 1 || x - tank.pos.X == -1) && y - tank.pos.Y == 0) ||
-                    ((y - tank.pos.Y == 1 || y - tank.pos.Y == -1) && x - tank.pos.X == 0))
+                Unit u = ActivePlayer().ActiveUnit;
+                if ((((x - u.pos.X == 1 || x - u.pos.X == -1) && y - u.pos.Y == 0) ||
+                    ((y - u.pos.Y == 1 || y - u.pos.Y == -1) && x - u.pos.X == 0)) &&
+                    ActivePlayer().ActiveUnit.movement > 0)
                     spriteBatch.Draw(t, new Rectangle(x * Game1.Scale, y * Game1.Scale, Game1.Scale, Game1.Scale), Color.Yellow);
                 else
                     spriteBatch.Draw(t, new Rectangle(x * Game1.Scale, y * Game1.Scale, Game1.Scale, Game1.Scale), Color.White);

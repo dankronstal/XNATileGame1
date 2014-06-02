@@ -9,22 +9,25 @@ using Microsoft.Xna.Framework;
 
 namespace XNATileGame1
 {
-    public class Tank : Unit
+    public class Factory : Unit
     {
         public override void LoadContent(ContentManager content, SpriteBatch spriteBatch)
         {
             cm = content;
-            tex = cm.Load<Texture2D>("unit_tank");
-            maxMovement = 2;
-            movement = 2;
-            hitPoints = 1;
+            tex = cm.Load<Texture2D>("unit_factory");
+            maxMovement = 1;
+            movement = 1;
+            hitPoints = 5;
         }
 
-        internal Point Fire(KeyboardState keyState, List<ActionEntry> actions)
+        internal Tank Deploy(KeyboardState keyState, List<ActionEntry> actions)
         {
             Point target = getTargetPoint(this.pos, keyState);
             actions.Add(new ActionEntry() { actionType = ActionTypes.Firing, unit = this, actionFrom = pos, actionTo = target });
-            return target;
+            Tank t = new Tank { Player = this.Player, pos = target };
+            Player.Units.Add(t);
+            Player.Resources -= 200;
+            return t;
         }
     }
 }

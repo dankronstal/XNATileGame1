@@ -63,7 +63,7 @@ namespace XNATileGame1
 
             foreach (ActionEntry ae in Actions)
             {
-                output += "Player " + ae.tank.Player.Id + " : Action [" + ae.actionType.ToString() + "] : From " + ae.actionFrom.ToString() + " : To " + ae.actionTo.ToString() + "\n"; 
+                output += "Player " + ae.unit.Player.Id + " : Action [" + ae.actionType.ToString() + "] : From " + ae.actionFrom.ToString() + " : To " + ae.actionTo.ToString() + "\n"; 
             }
 
             FontOrigin = Font2.MeasureString(output);
